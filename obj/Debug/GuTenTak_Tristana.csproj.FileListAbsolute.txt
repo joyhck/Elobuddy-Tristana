@@ -1,0 +1,13 @@
+E:\Users\smart\Desktop\ez\Elobuddy - Tristana\bin\Release\GuTenTak_Tristana.exe.config
+E:\Users\smart\Desktop\ez\Elobuddy - Tristana\obj\Debug\GuTenTak_Tristana.Properties.Resources.resources
+E:\Users\smart\Desktop\ez\Elobuddy - Tristana\obj\Debug\GuTenTak_Tristana.csproj.GenerateResource.Cache
+E:\Users\smart\Desktop\ez\Elobuddy - Tristana\obj\Debug\GuTenTak_Tristana.csprojResolveAssemblyReference.cache
+E:\Users\smart\Desktop\ez\Elobuddy - Tristana\bin\Release\GuTenTak_Tristana.exe
+E:\Users\smart\Desktop\ez\Elobuddy - Tristana\bin\Release\GuTenTak_Tristana.pdb
+E:\Users\smart\Desktop\ez\Elobuddy - Tristana\bin\Release\EloBuddy.dll
+E:\Users\smart\Desktop\ez\Elobuddy - Tristana\bin\Release\EloBuddy.SDK.dll
+E:\Users\smart\Desktop\ez\Elobuddy - Tristana\bin\Release\SharpDX.Direct3D9.dll
+E:\Users\smart\Desktop\ez\Elobuddy - Tristana\bin\Release\SharpDX.dll
+E:\Users\smart\Desktop\ez\Elobuddy - Tristana\bin\Release\Newtonsoft.Json.dll
+E:\Users\smart\Desktop\ez\Elobuddy - Tristana\obj\Debug\GuTenTak_Tristana.exe
+E:\Users\smart\Desktop\ez\Elobuddy - Tristana\obj\Debug\GuTenTak_Tristana.pdb
