@@ -46,12 +46,18 @@ namespace GuTenTak.Tristana
         public static float DmgCalc(AIHeroClient target)
         {
             var damage = 0f;
-            if (Program.W.IsReady() && target.IsValidTarget(Program.W.Range))
-                damage += WCalc(target);
+            if (Program.E.IsReady() && target.IsValidTarget(Program.E.Range))
+                if (!target.HasBuff("TristanaECharge"))
+                {
+                    damage += ECalc(target);
+                }
+                else
+                {
+                    damage -= ECalc(target);
+                    damage += ECalc(target) + ECalc(target) * (target.GetBuffCount("TristanaECharge") * 30f);
+                }
             if (Program.R.IsReady() && target.IsValidTarget(Program.R.Range))
                 damage += RCalc(target);
-
-            damage += _Player.GetAutoAttackDamage(target, true) * 2;
             return damage;
         }
         
@@ -59,10 +65,18 @@ namespace GuTenTak.Tristana
         public static float ECharge(AIHeroClient target)
         {
             var damage = 0f;
-            if (Program.E.IsReady() && target.IsValidTarget(Program.E.Range) && !target.HasBuff("TristanaECharge"))
-                damage += ECalc(target);
-            if (Program.E.IsReady() && target.IsValidTarget(Program.E.Range) && target.HasBuff("TristanaECharge"))
-                damage += ECalc(target) + ECalc(target) * (target.GetBuffCount("TristanaECharge") * 30f);
+            if (Program.E.IsReady() && target.IsValidTarget(Program.E.Range))
+                if (!target.HasBuff("TristanaECharge"))
+                {
+                    damage += ECalc(target);
+                }
+                else
+                {
+                    damage -= ECalc(target);
+                    damage += ECalc(target) + ECalc(target) * (target.GetBuffCount("TristanaECharge") * 30f);
+                }
+            //if (Program.E.IsReady() && target.IsValidTarget(Program.E.Range) && target.HasBuff("TristanaECharge"))
+                //damage += ECalc(target) + ECalc(target) * (target.GetBuffCount("TristanaECharge") * 30f);
             damage += _Player.GetAutoAttackDamage(target, true) * 2;
             return damage;
         }

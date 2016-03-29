@@ -10,7 +10,9 @@ using EloBuddy.SDK.Rendering;
 using GuTenTak.Tristana;
 using SharpDX;
 using EloBuddy.SDK.Constants;
+using color = System.Drawing.Color;
 using System.Collections.Generic;
+using SharpDX.Direct3D9;
 
 namespace GuTenTak.Tristana
 {
@@ -19,6 +21,7 @@ namespace GuTenTak.Tristana
         public const string ChampionName = "Tristana";
         public static Menu Menu, ModesMenu1, ModesMenu2, ModesMenu3, DrawMenu;
         public static int SkinBase;
+
         private static HashSet<string> DB { get; set; }
         public static Item Youmuu = new Item(ItemId.Youmuus_Ghostblade);
         public static Item Botrk = new Item(ItemId.Blade_of_the_Ruined_King);
@@ -26,24 +29,17 @@ namespace GuTenTak.Tristana
         public static Item Qss = new Item(ItemId.Quicksilver_Sash);
         public static Item Simitar = new Item(ItemId.Mercurial_Scimitar);
         public static Item hextech = new Item(ItemId.Hextech_Gunblade, 700);
-
-        private static readonly Dictionary<float, float>[] IncDamage = new Dictionary<float, float>[]
-{
-            new Dictionary<float, float>(), new Dictionary<float, float>(), new Dictionary<float, float>(), new Dictionary<float, float>(), new Dictionary<float, float>()
-};
-        private static readonly Dictionary<float, float>[] InstDamage = new Dictionary<float, float>[]
+        private static Vector3? LastHarassPos { get; set; }
+        private static readonly Vector2 Offset = new Vector2(1, 0);
+        private static bool HasEBuff(Obj_AI_Base target)
         {
-            new Dictionary<float, float>(), new Dictionary<float, float>(), new Dictionary<float, float>(), new Dictionary<float, float>(), new Dictionary<float, float>()
-        };
-        public static List<MissileClient> blockThese = new List<MissileClient>();
-        public static int me = int.MaxValue;
-        public static bool castOnMe = false;
-
-        public static float getIncomingDamageForI(int i)
-        {
-            return IncDamage[i].Sum(e => e.Value) + InstDamage[i].Sum(e => e.Value);
+            return target.HasBuff("TristanaECharge");
         }
 
+        public static List<AIHeroClient> CloseEnemies(float range = 1500, Vector3 from = default(Vector3))
+        {
+            return EntityManager.Heroes.Enemies.Where(e => e.IsValidTarget(range, false, from)).ToList();
+        }
 
         public static AIHeroClient PlayerInstance
         {
@@ -73,12 +69,13 @@ namespace GuTenTak.Tristana
         static void Game_OnStart(EventArgs args)
         {
             Game.OnUpdate += Game_OnUpdate;
-            Drawing.OnDraw += Game_OnDraw;
+            Game.OnTick += OnTick;
             Obj_AI_Base.OnBuffGain += Common.OnBuffGain;
             GameObject.OnCreate += OnCreate;
             Gapcloser.OnGapcloser += Common.Gapcloser_OnGapCloser;
             Orbwalker.OnPreAttack += OnPreAttack;
-            Game.OnTick += OnTick;
+            Drawing.OnDraw += Game_OnDraw;
+            Drawing.OnEndScene += Drawing_OnEndScene;
             SkinBase = Player.Instance.SkinId;
             try
             {
@@ -109,6 +106,7 @@ namespace GuTenTak.Tristana
                 ModesMenu1.Add("ComboQ", new CheckBox("Use Q on Combo", true));
                 ModesMenu1.Add("ComboE", new CheckBox("Use E on Combo", true));
                 ModesMenu1.Add("ComboEF", new CheckBox("Combo E Forced Target", true));
+                ModesMenu1.Add("ManualR", new KeyBind("Semi-Auto R", false, KeyBind.BindTypes.HoldActive, 'T'));
 
                 ModesMenu1.AddSeparator();
                 ModesMenu1.AddLabel("E List");
@@ -118,6 +116,7 @@ namespace GuTenTak.Tristana
                 }
                 ModesMenu1.AddSeparator();
                 ModesMenu1.AddLabel("Harass Configs");
+                ModesMenu1.Add("HarassEF", new CheckBox("Harass E Forced Target", true));
                 ModesMenu1.Add("HarassQ", new CheckBox("Use Q on Harass", true));
                 ModesMenu1.Add("HarassE", new CheckBox("Use E on Harass", true));
                 ModesMenu1.Add("ManaHE", new Slider("Use Harass Mana %", 60));
@@ -148,6 +147,11 @@ namespace GuTenTak.Tristana
                 ModesMenu3.Add("FleeW", new CheckBox("Use W on Flee", true));
 
                 ModesMenu3.AddSeparator();
+                ModesMenu3.AddLabel("Skin Hack");
+                ModesMenu3.Add("skinhack", new CheckBox("Activate Skin hack", false));
+                ModesMenu3.Add("skinId", new ComboBox("Skin Mode", 0, "Default", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"));
+
+                ModesMenu3.AddSeparator();
                 ModesMenu3.AddLabel("Item Usage on Combo");
                 ModesMenu3.Add("useYoumuu", new CheckBox("Use Youmuu", true));
                 ModesMenu3.Add("usehextech", new CheckBox("Use Hextech", true));
@@ -176,13 +180,11 @@ namespace GuTenTak.Tristana
                 ModesMenu3.Add("PoppyUlt", new CheckBox("Poppy R", true));
                 ModesMenu3.Add("QssUltDelay", new Slider("Use QSS Delay(ms) for Ult", 250, 0, 1000));
 
-                ModesMenu3.AddLabel("Skin Hack");
-                ModesMenu3.Add("skinhack", new CheckBox("Activate Skin hack", false));
-                ModesMenu3.Add("skinId", new ComboBox("Skin Mode", 0, "Default", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"));
-
                 DrawMenu = Menu.AddSubMenu("Draws", "DrawTristana");
                 DrawMenu.Add("drawA", new CheckBox(" Draw Real AA", true));
                 DrawMenu.Add("drawW", new CheckBox(" Draw W", true));
+                DrawMenu.Add("drawE", new CheckBox(" Draw E Stack", true));
+                DrawMenu.Add("indicator", new CheckBox(" Draw Damage indicator ( E + R )", true));
             }
 
             catch (Exception e)
@@ -190,6 +192,27 @@ namespace GuTenTak.Tristana
 
             }
 
+        }
+
+        private static void Drawing_OnEndScene(EventArgs args)
+        {
+            if (DrawMenu["indicator"].Cast<CheckBox>().CurrentValue)
+            {
+                foreach (var enemy in EntityManager.Heroes.Enemies.Where(a => !a.IsDead && a.IsHPBarRendered))
+                {
+                    var damage = DamageLib.DmgCalc(enemy);
+                    var damagepercent = (enemy.TotalShieldHealth() - damage > 0 ? enemy.TotalShieldHealth() - damage : 0) /
+                                        (enemy.MaxHealth + enemy.AllShield + enemy.AttackShield + enemy.MagicShield);
+                    var hppercent = enemy.TotalShieldHealth() /
+                                    (enemy.MaxHealth + enemy.AllShield + enemy.AttackShield + enemy.MagicShield);
+                    var start = new Vector2((int)(enemy.HPBarPosition.X + Offset.X + damagepercent * 104),
+                        (int)(enemy.HPBarPosition.Y + Offset.Y) - 5);
+                    var end = new Vector2((int)(enemy.HPBarPosition.X + Offset.X + hppercent * 104) + 2,
+                        (int)(enemy.HPBarPosition.Y + Offset.Y) - 5);
+
+                    Drawing.DrawLine(start, end, 9, color.MediumVioletRed);
+                }
+            }
         }
 
         private static void Game_OnDraw(EventArgs args)
@@ -207,17 +230,61 @@ namespace GuTenTak.Tristana
                 {
                     Circle.Draw(Color.LightGreen, PlayerInstance.AttackRange + 50, Player.Instance.Position);
                 }
+                if (DrawMenu["drawE"].Cast<CheckBox>().CurrentValue)
+                {   // Thanks Ban# El :P
+                    var target = EntityManager.Heroes.Enemies.Find(
+                        e => e.HasBuff("TristanaECharge") && e.IsValidTarget(2000));
+                    if (!target.IsValidTarget())
+                    {
+                        return;
+                    }
+
+
+                    if (LastHarassPos == null)
+                    {
+                        LastHarassPos = _Player.ServerPosition;
+                    }
+
+                    var x = target.HPBarPosition.X + 45;
+                    var y = target.HPBarPosition.Y - 25;
+
+                    if (E.Level > 0)
+                    {
+                        if (HasEBuff(target)) //Credits to lizzaran 
+                        {
+                            int stacks = target.GetBuffCount("TristanaECharge");
+                            if (stacks > -1)
+                            {
+                                for (var i = 0; 4 > i; i++)
+                                {
+                                    
+                                    Drawing.DrawLine(x + i * 20, y, x + i * 20 + 5, y, 15, i > stacks ? color.DarkGray : color.LightSeaGreen);
+                                }
+                            }
+                        }
+                    }
+                 }
             }
             catch (Exception e)
             {
 
             }
         }
+
         static void Game_OnUpdate(EventArgs args)
         {
             try
             {
-                Common.KillSteal();
+                var keybind = ModesMenu1["ManualR"].Cast<KeyBind>().CurrentValue;
+
+                if (keybind)
+                {
+                    var Target = TargetSelector.GetTarget(R.Range, DamageType.Physical);
+                    if (Target == null) return;
+                    if (!Target.IsValid()) return;
+                    R.Cast(Target);
+                }
+
                 if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.Combo))
                 {
                     Common.Combo();
@@ -237,7 +304,6 @@ namespace GuTenTak.Tristana
 
                 if (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.JungleClear))
                 {
-
                     Common.JungleClear();
                 }
 
@@ -260,27 +326,26 @@ namespace GuTenTak.Tristana
 
         public static void OnTick(EventArgs args)
         {
+            Common.KillSteal();
             Common.Skinhack();
         }
 
         private static void OnCreate(GameObject sender, EventArgs args)
         {
-            var Rengar = EntityManager.Heroes.Enemies.Find(r => r.ChampionName.Equals("Rengar"));
-            var khazix = EntityManager.Heroes.Enemies.Find(z => z.ChampionName.Equals("Khazix"));
+            var Rengar = EntityManager.Heroes.Enemies.Find(R => R.ChampionName.Equals("Rengar"));
+            var khazix = EntityManager.Heroes.Enemies.Find(Kz => Kz.ChampionName.Equals("Khazix"));
 
             if (ModesMenu3["AntiGapKR"].Cast<CheckBox>().CurrentValue && R.IsReady())
             {
-                if (khazix != null)
-                {
-                    if (sender.Name == "Khazix_Base_E_Tar.troy" &&
-                        sender.Position.Distance(Player.Instance) <= 400)
-                        R.Cast(khazix);
-                }
                 if (Rengar != null)
                 {
-                    if (sender.Name == "Rengar_LeapSound.troy" &&
-                        sender.Position.Distance(Player.Instance) < R.Range)
+                    if (sender.Name == "Rengar_LeapSound.troy" && sender.Position.Distance(Player.Instance) < R.Range)
                         R.Cast(Rengar);
+                }
+                if (khazix != null)
+                {
+                    if (sender.Name == "Khazix_Base_E_Tar.troy" && sender.Position.Distance(Player.Instance) <= 500)
+                        R.Cast(khazix);
                 }
             }
         }
@@ -292,16 +357,11 @@ namespace GuTenTak.Tristana
                 if (ModesMenu1["ComboEF"].Cast<CheckBox>().CurrentValue)
                 {
                     var forcedtarget = CloseEnemies(Q.Range).Find
-                        (a => a.HasBuff("tristanaecharge"));
+                        (a => a.HasBuff("TristanaECharge"));
 
                     Player.IssueOrder(GameObjectOrder.AttackUnit, forcedtarget, true);
                 }
             }
-        }
-
-        public static List<AIHeroClient> CloseEnemies(float range = 1500, Vector3 from = default(Vector3))
-        {
-            return EntityManager.Heroes.Enemies.Where(e => e.IsValidTarget(range, false, from)).ToList();
         }
 
     }

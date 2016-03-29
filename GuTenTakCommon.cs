@@ -12,9 +12,6 @@ namespace GuTenTak.Tristana
 {
     internal class Common : Program
     {
-        public static object HeroManager { get; private set; }
-        private static HashSet<string> DB { get; set; }
-
         public static float GetComboDamage(AIHeroClient target)
         {
             var damage = 0f;
@@ -56,11 +53,31 @@ namespace GuTenTak.Tristana
             var Target = TargetSelector.GetTarget(Q.Range, DamageType.Physical);
             if (Target == null) return;
             var useQ = ModesMenu1["HarassQ"].Cast<CheckBox>().CurrentValue;
+            var useE = ModesMenu1["HarassE"].Cast<CheckBox>().CurrentValue;
             if (!Target.IsValid()) return;
 
-            if (Q.IsInRange(Target) && Q.IsReady() && useQ && !Target.IsInvulnerable && PlayerInstance.ManaPercent >= Program.ModesMenu1["HarassMana"].Cast<Slider>().CurrentValue)
+
+            if (ModesMenu1["FarmEF"].Cast<CheckBox>().CurrentValue)
+            {
+                var forcedtarget = CloseEnemies(Q.Range).Find (a => a.HasBuff("TristanaECharge"));
+                if (forcedtarget != null)
+                {
+                    Orbwalker.ForcedTarget = forcedtarget;
+                }
+                else
+                {
+                    Orbwalker.ForcedTarget = null;
+                }
+            }
+
+            if (Q.IsInRange(Target) && Q.IsReady() && useQ && !Target.IsInvulnerable)
             {
                 Q.Cast();
+            }
+
+            if (E.IsInRange(Target) && E.IsReady() && useE && !Target.IsInvulnerable && PlayerInstance.ManaPercent >= Program.ModesMenu1["ManaHE"].Cast<Slider>().CurrentValue)
+            {
+                E.Cast(Target);
             }
         }
 
@@ -398,6 +415,7 @@ namespace GuTenTak.Tristana
                                   where (DamageLib.RCalc(enemy) * 0.99) + (DamageLib.ECharge(enemy) * 0.99) >= enemy.Health
                                   select enemy)
             {
+                if (enemy == null) return;
                 if (RECast && R.IsReady() && enemy.HasBuff("TristanaECharge") && !enemy.IsInvulnerable)
                 {
                     R.Cast(enemy);
