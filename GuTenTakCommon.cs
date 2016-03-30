@@ -57,7 +57,7 @@ namespace GuTenTak.Tristana
             if (!Target.IsValid()) return;
 
 
-            if (ModesMenu1["FarmEF"].Cast<CheckBox>().CurrentValue)
+            if (ModesMenu1["HarassEF"].Cast<CheckBox>().CurrentValue)
             {
                 var forcedtarget = CloseEnemies(Q.Range).Find (a => a.HasBuff("TristanaECharge"));
                 if (forcedtarget != null)
@@ -75,7 +75,7 @@ namespace GuTenTak.Tristana
                 Q.Cast();
             }
 
-            if (E.IsInRange(Target) && E.IsReady() && useE && !Target.IsInvulnerable && PlayerInstance.ManaPercent >= Program.ModesMenu1["ManaHE"].Cast<Slider>().CurrentValue)
+            if (E.IsReady() && useE && !Target.IsInvulnerable && PlayerInstance.ManaPercent >= Program.ModesMenu1["ManaHE"].Cast<Slider>().CurrentValue)
             {
                 E.Cast(Target);
             }
