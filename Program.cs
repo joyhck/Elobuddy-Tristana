@@ -75,7 +75,6 @@ namespace GuTenTak.Tristana
             Gapcloser.OnGapcloser += Common.Gapcloser_OnGapCloser;
             Orbwalker.OnPreAttack += OnPreAttack;
             Drawing.OnDraw += Game_OnDraw;
-            Drawing.OnEndScene += Drawing_OnEndScene;
             SkinBase = Player.Instance.SkinId;
             try
             {
@@ -144,7 +143,7 @@ namespace GuTenTak.Tristana
                 ModesMenu3.Add("AntiGapW", new CheckBox("Use W for Anti-Gapcloser", true));
                 ModesMenu3.Add("AntiGapR", new CheckBox("Use R for Anti-Gapcloser", false));
                 ModesMenu3.Add("AntiGapKR", new CheckBox("Use R for Anti-Gapcloser (Khazix & Rengar)", true));
-                ModesMenu3.Add("FleeW", new CheckBox("Use W on Flee", true));
+                ModesMenu3.Add("FleeW", new CheckBox("Use W on Flee", false));
 
                 ModesMenu3.AddSeparator();
                 ModesMenu3.AddLabel("Skin Hack");
@@ -184,7 +183,6 @@ namespace GuTenTak.Tristana
                 DrawMenu.Add("drawA", new CheckBox(" Draw Real AA", true));
                 DrawMenu.Add("drawW", new CheckBox(" Draw W", true));
                 DrawMenu.Add("drawE", new CheckBox(" Draw E Stack", true));
-                DrawMenu.Add("indicator", new CheckBox(" Draw Damage indicator ( E + R )", true));
             }
 
             catch (Exception e)
@@ -192,27 +190,6 @@ namespace GuTenTak.Tristana
 
             }
 
-        }
-
-        private static void Drawing_OnEndScene(EventArgs args)
-        {
-            if (DrawMenu["indicator"].Cast<CheckBox>().CurrentValue)
-            {
-                foreach (var enemy in EntityManager.Heroes.Enemies.Where(a => !a.IsDead && a.IsHPBarRendered))
-                {
-                    var damage = DamageLib.DmgCalc(enemy);
-                    var damagepercent = (enemy.TotalShieldHealth() - damage > 0 ? enemy.TotalShieldHealth() - damage : 0) /
-                                        (enemy.MaxHealth + enemy.AllShield + enemy.AttackShield + enemy.MagicShield);
-                    var hppercent = enemy.TotalShieldHealth() /
-                                    (enemy.MaxHealth + enemy.AllShield + enemy.AttackShield + enemy.MagicShield);
-                    var start = new Vector2((int)(enemy.HPBarPosition.X + Offset.X + damagepercent * 104),
-                        (int)(enemy.HPBarPosition.Y + Offset.Y) - 5);
-                    var end = new Vector2((int)(enemy.HPBarPosition.X + Offset.X + hppercent * 104) + 2,
-                        (int)(enemy.HPBarPosition.Y + Offset.Y) - 5);
-
-                    Drawing.DrawLine(start, end, 9, color.MediumVioletRed);
-                }
-            }
         }
 
         private static void Game_OnDraw(EventArgs args)

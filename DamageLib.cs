@@ -46,16 +46,15 @@ namespace GuTenTak.Tristana
         public static float DmgCalc(AIHeroClient target)
         {
             var damage = 0f;
-            if (Program.E.IsReady() && target.IsValidTarget(Program.E.Range))
+            if (Program.E.IsReady() && target.IsValidTarget(2000))
                 if (!target.HasBuff("TristanaECharge"))
                 {
                     damage += ECalc(target);
                 }
-                else
-                {
-                    damage -= ECalc(target);
-                    damage += ECalc(target) + ECalc(target) * (target.GetBuffCount("TristanaECharge") * 30f);
-                }
+            if (target.HasBuff("TristanaECharge") && target.IsValidTarget(2000))
+            {
+               damage += ECalc(target) + ECalc(target) * (target.GetBuffCount("TristanaECharge") * 30f);
+            }
             if (Program.R.IsReady() && target.IsValidTarget(Program.R.Range))
                 damage += RCalc(target);
             return damage;
@@ -72,7 +71,6 @@ namespace GuTenTak.Tristana
                 }
                 else
                 {
-                    damage -= ECalc(target);
                     damage += ECalc(target) + ECalc(target) * (target.GetBuffCount("TristanaECharge") * 30f);
                 }
             //if (Program.E.IsReady() && target.IsValidTarget(Program.E.Range) && target.HasBuff("TristanaECharge"))
