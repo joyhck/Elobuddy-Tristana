@@ -23,7 +23,7 @@ namespace GuTenTak.Tristana
             return damage;
         }
 
-
+        //c
         public static void Combo()
         {
             var Target = TargetSelector.GetTarget(_Player.AttackRange, DamageType.Physical);

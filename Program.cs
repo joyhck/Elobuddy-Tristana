@@ -208,7 +208,7 @@ namespace GuTenTak.Tristana
                     Circle.Draw(Color.LightGreen, PlayerInstance.AttackRange + 50, Player.Instance.Position);
                 }
                 if (DrawMenu["drawE"].Cast<CheckBox>().CurrentValue)
-                {   // Thanks Ban# El :P
+                {   // Thanks Ban# El :P //
                     var target = EntityManager.Heroes.Enemies.Find(
                         e => e.HasBuff("TristanaECharge") && e.IsValidTarget(2000));
                     if (!target.IsValidTarget())

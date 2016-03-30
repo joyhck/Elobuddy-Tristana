@@ -60,7 +60,7 @@ namespace GuTenTak.Tristana
             return damage;
         }
         
-
+        //E
         public static float ECharge(AIHeroClient target)
         {
             var damage = 0f;
