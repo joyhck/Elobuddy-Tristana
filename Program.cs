@@ -21,8 +21,6 @@ namespace GuTenTak.Tristana
         public const string ChampionName = "Tristana";
         public static Menu Menu, ModesMenu1, ModesMenu2, ModesMenu3, DrawMenu;
         public static int SkinBase;
-
-        private static HashSet<string> DB { get; set; }
         public static Item Youmuu = new Item(ItemId.Youmuus_Ghostblade);
         public static Item Botrk = new Item(ItemId.Blade_of_the_Ruined_King);
         public static Item Cutlass = new Item(ItemId.Bilgewater_Cutlass);
