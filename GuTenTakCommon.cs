@@ -27,18 +27,13 @@ namespace GuTenTak.Tristana
         public static void Combo()
         {
             var Target = TargetSelector.GetTarget(_Player.AttackRange, DamageType.Physical);
-            if (Target == null) return;
+            if (Target == null || !Target.IsValid()) return;
             var useE = ModesMenu1["ComboE"].Cast<CheckBox>().CurrentValue;
-            if (!Target.IsValid()) return;
-            foreach (var ETarget in EntityManager.Heroes.Enemies)
+            if (E.IsReady() && useE && !Target.IsInvulnerable && ModesMenu1[Target.ChampionName].Cast<CheckBox>().CurrentValue)
             {
-                if (E.IsReady() && useE && !Target.IsInvulnerable && ModesMenu1[ETarget.ChampionName].Cast<CheckBox>().CurrentValue)
-                {
-                    E.Cast(Target);
-                }
+                E.Cast(Target);
             }
-                    
-            if (Target == null) return;
+            
             var useQ = ModesMenu1["ComboQ"].Cast<CheckBox>().CurrentValue;
             if (!Target.IsValid()) return;
             if (Q.IsReady() && useQ && !Target.IsInvulnerable)
@@ -51,11 +46,9 @@ namespace GuTenTak.Tristana
          public static void Harass()
         {
             var Target = TargetSelector.GetTarget(Q.Range, DamageType.Physical);
-            if (Target == null) return;
+            if (Target == null || !Target.IsValid()) return;
             var useQ = ModesMenu1["HarassQ"].Cast<CheckBox>().CurrentValue;
             var useE = ModesMenu1["HarassE"].Cast<CheckBox>().CurrentValue;
-            if (!Target.IsValid()) return;
-
 
             if (ModesMenu1["HarassEF"].Cast<CheckBox>().CurrentValue)
             {
